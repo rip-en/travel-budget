@@ -1,12 +1,24 @@
-import React, { useState, Children } from "react";
+import React, { useState, Children, useRef, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import StepIndicator from "./StepIndicator";
-import StepConnector from "./StepConnector";
-import StepContentWrapper from "./StepContentWrapper";
-import "./Stepper.css";
+import { Check } from "lucide-react";
 
 export const Step = ({ children }) => {
-  return <div className="step-default">{children}</div>;
+  return <div className="py-2">{children}</div>;
+};
+
+const stepVariants = {
+  enter: (dir) => ({
+    x: dir >= 0 ? "-100%" : "100%",
+    opacity: 0,
+  }),
+  center: {
+    x: "0%",
+    opacity: 1,
+  },
+  exit: (dir) => ({
+    x: dir >= 0 ? "50%" : "-50%",
+    opacity: 0,
+  }),
 };
 
 export default function Stepper({
@@ -54,54 +66,79 @@ export default function Stepper({
   };
 
   return (
-    <div className="outer-container">
-      <div className={`step-circle-container ${isDarkMode ? 'bg-black' : 'bg-white/50'} backdrop-blur-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} rounded-lg`}>
-        <div className="step-indicator-row">
-          {stepsArray.map((_, index) => {
-            const stepNumber = index + 1;
-            const isNotLastStep = index < totalSteps - 1;
-            return (
-              <React.Fragment key={stepNumber}>
-                <StepIndicator
-                  step={stepNumber}
-                  currentStep={currentStep}
-                  isDarkMode={isDarkMode}
-                  onClickStep={(clicked) => {
-                    setDirection(clicked > currentStep ? 1 : -1);
-                    updateStep(clicked);
-                  }}
-                />
-                {isNotLastStep && (
-                  <StepConnector isComplete={currentStep > stepNumber} isDarkMode={isDarkMode} />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-
+    <div className="w-full flex flex-col items-center">
+      <div className={`w-full max-w-lg p-6 rounded-xl ${isDarkMode ? 'bg-black shadow-lg border border-gray-800' : 'bg-white shadow-md border border-gray-100'} backdrop-blur-md`}>
+        {/* Content first - moves content above step indicators */}
         <StepContentWrapper
           isCompleted={isCompleted}
           currentStep={currentStep}
           direction={direction}
-          className="step-content-default"
+          className="w-full"
         >
           {stepsArray[currentStep - 1]}
         </StepContentWrapper>
+        
+        {/* Step indicators moved below content */}
+        <div className="flex justify-center items-center gap-4 mt-4">
+          {stepsArray.map((_, index) => {
+            const stepNumber = index + 1;
+            const isActive = stepNumber === currentStep;
+            const isCompleted = stepNumber < currentStep;
+            
+            return (
+              <div 
+                key={stepNumber}
+                className="cursor-pointer p-1 transition-all duration-200 hover:scale-110"
+                onClick={() => {
+                  setDirection(stepNumber > currentStep ? 1 : -1);
+                  updateStep(stepNumber);
+                }}
+              >
+                <div 
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/30 scale-110' 
+                      : isCompleted 
+                        ? 'bg-green-600 text-white shadow-sm shadow-green-500/20' 
+                        : isDarkMode
+                          ? 'bg-gray-800 text-gray-400'
+                          : 'bg-gray-100 text-gray-500 border border-gray-300/50'
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check className="w-4 h-4 text-white" />
+                  ) : (
+                    <span className={isActive ? 'text-white' : ''}>{stepNumber}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
+        {/* Footer */}
         {!isCompleted && (
-          <div className="footer-container">
-            <div className={`footer-nav ${currentStep !== 1 ? "spread" : "end"}`}>
+          <div className="w-full mt-6">
+            <div className={`flex ${currentStep !== 1 ? "justify-between" : "justify-end"} gap-4`}>
               {currentStep !== 1 && (
                 <button
                   onClick={handleBack}
-                  className={`back-button ${isDarkMode ? 'text-gray-300 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:text-gray-100 hover:bg-gray-800/50' 
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100 border border-gray-200'
+                  }`}
                 >
                   ← Previous
                 </button>
               )}
               <button
                 onClick={handleNext}
-                className="next-button"
+                className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-all duration-300 transform hover:translate-x-0.5 ${
+                  isDarkMode 
+                    ? 'bg-cyan-500 hover:bg-cyan-600 shadow-sm shadow-cyan-500/20' 
+                    : 'bg-cyan-600 hover:bg-cyan-700 shadow-sm shadow-cyan-600/20'
+                }`}
               >
                 {isLastStep ? "Create Holiday" : "Next →"}
               </button>
@@ -111,4 +148,48 @@ export default function Stepper({
       </div>
     </div>
   );
-} 
+}
+
+function StepContentWrapper({ isCompleted, currentStep, direction, children, className }) {
+  const [parentHeight, setParentHeight] = useState(0);
+
+  return (
+    <motion.div
+      className={className}
+      style={{ position: "relative", overflow: "hidden" }}
+      animate={{ height: isCompleted ? 0 : parentHeight }}
+      transition={{ type: "spring", duration: 0.4 }}
+    >
+      <AnimatePresence initial={false} mode="sync" custom={direction}>
+        {!isCompleted && (
+          <SlideTransition key={currentStep} direction={direction} onHeightReady={(h) => setParentHeight(h)}>
+            {children}
+          </SlideTransition>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function SlideTransition({ children, direction, onHeightReady }) {
+  const containerRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (containerRef.current) onHeightReady(containerRef.current.offsetHeight);
+  }, [children, onHeightReady]);
+
+  return (
+    <motion.div
+      ref={containerRef}
+      custom={direction}
+      variants={stepVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.4 }}
+      style={{ position: "absolute", left: 0, right: 0, top: 0 }}
+    >
+      {children}
+    </motion.div>
+  );
+}

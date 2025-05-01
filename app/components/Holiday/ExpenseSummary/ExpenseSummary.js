@@ -10,14 +10,23 @@ function ExpenseSummary({ isDarkMode, expenses }) {
 
   const getCategoryColor = (category) => {
     const colors = {
-      food: 'bg-green-500/20 text-green-500',
-      transportation: 'bg-blue-500/20 text-blue-500',
-      accommodation: 'bg-purple-500/20 text-purple-500',
-      activities: 'bg-yellow-500/20 text-yellow-500',
-      shopping: 'bg-pink-500/20 text-pink-500',
-      other: 'bg-gray-500/20 text-gray-500'
+      Food: 'bg-green-500/20 text-green-500',
+      Transportation: 'bg-blue-500/20 text-blue-500',
+      Accommodation: 'bg-purple-500/20 text-purple-500',
+      Activities: 'bg-yellow-500/20 text-yellow-500',
+      Shopping: 'bg-pink-500/20 text-pink-500',
+      Other: 'bg-gray-500/20 text-gray-500'
     };
-    return colors[category] || colors.other;
+    
+    // Case-insensitive lookup
+    const category_lowercase = (category || '').toLowerCase();
+    for (const [key, value] of Object.entries(colors)) {
+      if (key.toLowerCase() === category_lowercase) {
+        return value;
+      }
+    }
+    
+    return colors.Other;
   };
 
   return (

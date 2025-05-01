@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
 import "./globals.css";
 
 // Load font variants
@@ -33,7 +34,9 @@ export default function RootLayout({ children }) {
           className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}>
       <body>
         <ThemeProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

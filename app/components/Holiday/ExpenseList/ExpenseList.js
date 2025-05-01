@@ -4,14 +4,23 @@ import { Pencil, Trash2 } from 'lucide-react';
 function ExpenseList({ isDarkMode, expenses, onEdit, onDelete }) {
   const getCategoryColor = (category) => {
     const colors = {
-      food: 'bg-green-500/20 text-green-500',
-      transportation: 'bg-blue-500/20 text-blue-500',
-      accommodation: 'bg-purple-500/20 text-purple-500',
-      activities: 'bg-yellow-500/20 text-yellow-500',
-      shopping: 'bg-pink-500/20 text-pink-500',
-      other: 'bg-gray-500/20 text-gray-500'
+      Food: 'bg-green-500/20 text-green-500',
+      Transportation: 'bg-blue-500/20 text-blue-500',
+      Accommodation: 'bg-purple-500/20 text-purple-500',
+      Activities: 'bg-yellow-500/20 text-yellow-500',
+      Shopping: 'bg-pink-500/20 text-pink-500',
+      Other: 'bg-gray-500/20 text-gray-500'
     };
-    return colors[category] || colors.other;
+    
+    // Case-insensitive lookup
+    const category_lowercase = (category || '').toLowerCase();
+    for (const [key, value] of Object.entries(colors)) {
+      if (key.toLowerCase() === category_lowercase) {
+        return value;
+      }
+    }
+    
+    return colors.Other;
   };
 
   const formatDate = (dateString) => {
@@ -32,7 +41,7 @@ function ExpenseList({ isDarkMode, expenses, onEdit, onDelete }) {
         <div className="space-y-3">
           {expenses.map((expense) => (
             <div
-              key={expense.id}
+              key={expense._id}
               className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'} backdrop-blur-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} transition-colors`}
             >
               <div className="flex justify-between items-start">
@@ -61,7 +70,7 @@ function ExpenseList({ isDarkMode, expenses, onEdit, onDelete }) {
                   <Pencil size={16} />
                 </button>
                 <button
-                  onClick={() => onDelete(expense.id)}
+                  onClick={() => onDelete(expense._id)}
                   className={`p-1.5 rounded-full hover:bg-red-500/10 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-red-400' : 'text-gray-500 hover:text-red-500'}`}
                 >
                   <Trash2 size={16} />
