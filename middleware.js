@@ -1,51 +1,39 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-// List of public paths that don't require authentication
-const publicPaths = [
-  '/',
+// Public page routes (no need to list /api routes here due to matcher config)
+const publicPageRoutes = [
+  '/', // Assuming homepage is public
   '/login',
   '/signup',
-  '/api/auth/login',
-  '/api/auth/signup',
-  '/api/auth/logout',
 ];
 
 export function middleware(request) {
-  // Get the path from the request
   const path = request.nextUrl.pathname;
-  
-  // Check if the path is public
-  const isPublicPath = publicPaths.some(publicPath => 
-    path === publicPath || path.startsWith('/api/auth/')
-  );
-  
-  // If it's a public path, allow access
-  if (isPublicPath) {
+  const token = request.cookies.get('auth_token')?.value;
+
+  // Check if the current path is a public page route
+  const isPublicPage = publicPageRoutes.includes(path);
+
+  // If it's a public page, allow access regardless of token
+  if (isPublicPage) {
     return NextResponse.next();
   }
-  
-  // Get the token from cookies
-  const token = request.cookies.get('auth_token')?.value;
-  
-  // If there's no token, redirect to login
+
+  // If it's not a public page and there's no token, redirect to login
   if (!token) {
+    console.log(`Middleware: No token found for protected route ${path}. Redirecting to login.`);
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  
-  // If token exists, allow access (token validation happens in API routes)
+
+  // If it's not a public page and token exists, allow access
+  // API routes will perform finer-grained token validation
   return NextResponse.next();
 }
 
-// Configure the paths that the middleware should run on
+// Config ensures middleware only runs on specified paths (excluding /api, static assets, etc.)
 export const config = {
   matcher: [
-    /*
-     * Match all paths except for:
-     * 1. /api/auth routes (login, signup, etc.) - handled separately above
-     * 2. Static files (css, js, images, fonts, etc.)
-     * 3. Favicon and other browser files
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }; 

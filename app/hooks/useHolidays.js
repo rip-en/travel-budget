@@ -18,6 +18,25 @@ export function useHolidays() {
       
       const data = await response.json();
       // Extract holidays array from the response
+      console.log('Fetched holidays data:', data.holidays);
+      
+      // Add additional validation checks
+      if (data.holidays && Array.isArray(data.holidays)) {
+        // Check if all holidays have unique IDs
+        const holidayIds = data.holidays.map(h => h._id);
+        const uniqueIds = new Set(holidayIds);
+        if (holidayIds.length !== uniqueIds.size) {
+          console.warn('WARNING: Duplicate holiday IDs detected in API response', 
+            holidayIds.filter((id, index) => holidayIds.indexOf(id) !== index));
+        }
+        
+        // Check for missing critical fields
+        const incompleteHolidays = data.holidays.filter(h => !h._id || !h.title || h.imagePreset === undefined);
+        if (incompleteHolidays.length > 0) {
+          console.warn('WARNING: Some holidays have missing critical fields:', incompleteHolidays);
+        }
+      }
+      
       setHolidays(data.holidays || []);
       setError(null);
     } catch (err) {
@@ -74,11 +93,9 @@ export function useHolidays() {
       const result = await response.json();
       const updatedHoliday = result.holiday; // Extract the holiday from the response
       
-      setHolidays((prev) => 
-        prev.map((holiday) => 
-          holiday._id === id ? updatedHoliday : holiday
-        )
-      );
+      // Explicitly refetch holidays to ensure UI consistency
+      await fetchHolidays();
+      
       return updatedHoliday;
     } catch (err) {
       console.error('Error updating holiday:', err);
@@ -114,21 +131,119 @@ export function useHolidays() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to add expense');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Data:', errorData);
+        throw new Error(errorData.error || 'Failed to add expense');
       }
 
-      const result = await response.json();
-      const newExpense = result.expense || result; // Extract the expense from the response if available
+      const newExpense = await response.json();
+      console.log("useHolidays.addExpense - API returned:", newExpense);
       
-      // Refresh holidays to get the updated data
+      // Fetch fresh data after successful addition
       await fetchHolidays();
       
+      // Return the new expense returned by the API
       return newExpense;
     } catch (err) {
       console.error('Error adding expense:', err);
       throw err;
     }
   };
+  
+  // Update an expense
+  const updateExpense = async (holidayId, expenseId, expenseData) => {
+    try {
+      const response = await fetch(`/api/holidays/${holidayId}/expenses/${expenseId}`, {
+        method: 'PUT', 
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(expenseData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Data:', errorData);
+        throw new Error(errorData.error || 'Failed to update expense');
+      }
+
+      const updatedExpense = await response.json(); // API returns the updated expense
+      
+      // Fetch fresh data after successful update
+      await fetchHolidays(); 
+      
+      // Return the updated expense returned by the API
+      return updatedExpense; 
+    } catch (err) {
+      console.error('Error updating expense:', err);
+      throw err;
+    }
+  };
+  
+  // Delete an expense
+  const deleteExpense = async (holidayId, expenseId) => {
+    try {
+      const response = await fetch(`/api/holidays/${holidayId}/expenses/${expenseId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error Data:', errorData);
+        throw new Error(errorData.error || 'Failed to delete expense');
+      }
+
+      // Fetch fresh data after successful deletion
+      await fetchHolidays(); 
+      
+      // Return success status
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+      throw err;
+    }
+  };
+
+  // --- Like/Unlike Hook Functions ---
+  const likeHoliday = async (holidayId) => {
+    try {
+      const response = await fetch(`/api/holidays/${holidayId}/like`, {
+        method: 'POST',
+        // No body needed, authentication is via cookie
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to like holiday');
+      }
+      // Refetch or optimistically update UI
+      await fetchHolidays(); 
+      return await response.json();
+    } catch (err) {
+      console.error(`Error liking holiday ${holidayId}:`, err);
+      // Handle error in UI (e.g., show toast)
+      throw err; 
+    }
+  };
+
+  const unlikeHoliday = async (holidayId) => {
+    try {
+      const response = await fetch(`/api/holidays/${holidayId}/like`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to unlike holiday');
+      }
+      // Refetch or optimistically update UI
+      await fetchHolidays(); 
+      return await response.json();
+    } catch (err) {
+      console.error(`Error unliking holiday ${holidayId}:`, err);
+      // Handle error in UI
+      throw err;
+    }
+  };
+  // --------------------------------
 
   return {
     holidays,
@@ -139,5 +254,9 @@ export function useHolidays() {
     updateHoliday,
     deleteHoliday,
     addExpense,
+    updateExpense,
+    deleteExpense,
+    likeHoliday,   // Export like function
+    unlikeHoliday, // Export unlike function
   };
 } 

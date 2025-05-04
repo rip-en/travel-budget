@@ -9,10 +9,12 @@ if (!cached) {
 
 export async function connectToDatabase() {
   if (cached.conn) {
+    console.log('Using cached MongoDB connection.');
     return cached.conn;
   }
 
   if (!cached.promise) {
+    console.log('No cached connection promise found, creating new one...');
     const uri = process.env.MONGODB_URI;
 
     if (!uri) {
@@ -41,7 +43,9 @@ export async function connectToDatabase() {
   }
 
   try {
+    console.log('Awaiting MongoDB connection promise...');
     cached.conn = await cached.promise;
+    console.log('Connection promise resolved, returning connection.');
     return cached.conn;
   } catch (e) {
     cached.promise = null;

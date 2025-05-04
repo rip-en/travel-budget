@@ -13,10 +13,23 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minLength: [6, 'Password should be at least 6 characters'],
   },
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    minlength: [3, 'Username must be at least 3 characters'],
+    match: [/^[a-zA-Z0-9]+$/, 'Username can only contain letters and numbers'],
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],
     trim: true,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
   },
   settings: {
     imageDisplayMode: {
@@ -43,6 +56,6 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+}, { timestamps: true });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema); 

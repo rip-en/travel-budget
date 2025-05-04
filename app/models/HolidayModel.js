@@ -23,7 +23,15 @@ const ExpenseSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true,
-  }
+  },
+  url: { 
+    type: String, 
+    trim: true, 
+  },
+  comment: { 
+    type: String, 
+    trim: true 
+  },
 });
 
 const HolidaySchema = new mongoose.Schema({
@@ -42,6 +50,7 @@ const HolidaySchema = new mongoose.Schema({
     type: String,
     required: [true, 'Destination is required'],
     trim: true,
+    index: true,
   },
   startDate: {
     type: Date,
@@ -85,7 +94,57 @@ const HolidaySchema = new mongoose.Schema({
   imagePreset: {
     type: Number, // Index for preset images
     default: null,
-  }
+  },
+  isPublic: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  tags: {
+    type: [String],
+    default: [],
+    index: true,
+  },
+  // --- Like/Heart Fields ---
+  likes: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: 'User',
+    default: [],
+    index: true // Index for potential lookups related to likes
+  },
+  likeCount: {
+    type: Number,
+    default: 0,
+    index: true // Index for sorting by popularity
+  },
+  // -------------------------
+  
+  // --- Comments --- 
+  comments: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      username: { // Denormalized for easier display
+        type: String,
+        required: true, 
+      },
+      text: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 500, // Add a max length
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  // ---------------
+
 }, {
   timestamps: true, // Adds createdAt and updatedAt timestamps
 });

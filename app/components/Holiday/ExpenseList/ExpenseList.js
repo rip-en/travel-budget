@@ -1,26 +1,21 @@
 import React from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Link, Edit2 } from 'lucide-react';
+import { getCurrencySymbol } from '../../../lib/utils';
+import { CATEGORY_COLOR_CLASSES } from '../../../lib/constants';
 
-function ExpenseList({ isDarkMode, expenses, onEdit, onDelete }) {
+function ExpenseList({ 
+  expenses, 
+  isDarkMode, 
+  onEdit, 
+  onDelete, 
+  currency,
+  isPublicView = false
+}) {
+  const currencySymbol = getCurrencySymbol(currency);
+
   const getCategoryColor = (category) => {
-    const colors = {
-      Food: 'bg-green-500/20 text-green-500',
-      Transportation: 'bg-blue-500/20 text-blue-500',
-      Accommodation: 'bg-purple-500/20 text-purple-500',
-      Activities: 'bg-yellow-500/20 text-yellow-500',
-      Shopping: 'bg-pink-500/20 text-pink-500',
-      Other: 'bg-gray-500/20 text-gray-500'
-    };
-    
-    // Case-insensitive lookup
-    const category_lowercase = (category || '').toLowerCase();
-    for (const [key, value] of Object.entries(colors)) {
-      if (key.toLowerCase() === category_lowercase) {
-        return value;
-      }
-    }
-    
-    return colors.Other;
+    const categoryKey = Object.keys(CATEGORY_COLOR_CLASSES).find(key => key.toLowerCase() === (category || '').toLowerCase());
+    return CATEGORY_COLOR_CLASSES[categoryKey] || CATEGORY_COLOR_CLASSES.Default;
   };
 
   const formatDate = (dateString) => {
@@ -47,34 +42,57 @@ function ExpenseList({ isDarkMode, expenses, onEdit, onDelete }) {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className={`font-medium ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    {expense.description}
+                    {expense.title}
                   </h3>
+                  {expense.comment && (
+                    <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {expense.comment}
+                    </p>
+                  )}
                   <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                     {formatDate(expense.date)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {expense.url && (
+                    <a 
+                      href={expense.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className={`p-1 rounded-full ${isDarkMode ? 'text-blue-400 hover:bg-blue-900/50' : 'text-blue-600 hover:bg-blue-100'}`}
+                      title={expense.url}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Link size={16} />
+                    </a>
+                  )}
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(expense.category)}`}>
                     {expense.category.charAt(0).toUpperCase() + expense.category.slice(1)}
                   </span>
                   <span className={`font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    ${parseFloat(expense.amount).toFixed(2)}
+                    {currencySymbol}{parseFloat(expense.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-3">
-                <button
-                  onClick={() => onEdit(expense)}
-                  className={`p-1.5 rounded-full hover:bg-gray-200/10 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-600'}`}
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  onClick={() => onDelete(expense._id)}
-                  className={`p-1.5 rounded-full hover:bg-red-500/10 transition-colors ${isDarkMode ? 'text-gray-400 hover:text-red-400' : 'text-gray-500 hover:text-red-500'}`}
-                >
-                  <Trash2 size={16} />
-                </button>
+                {!isPublicView && (
+                  <div className="flex items-center gap-2 ml-auto pl-4">
+                    <button 
+                      onClick={() => onEdit(expense)}
+                      className={`p-1.5 rounded-full transition-colors duration-200 ${isDarkMode ? 'hover:bg-cyan-600/20 text-gray-400 hover:text-cyan-300' : 'hover:bg-cyan-100 text-gray-500 hover:text-cyan-600'}`}
+                      title="Edit Expense"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button 
+                      onClick={() => onDelete(expense._id)}
+                      className={`p-1.5 rounded-full transition-colors duration-200 ${isDarkMode ? 'hover:bg-red-600/20 text-gray-400 hover:text-red-400' : 'hover:bg-red-100 text-gray-500 hover:text-red-600'}`}
+                      title="Delete Expense"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

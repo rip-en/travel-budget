@@ -33,7 +33,7 @@ export async function GET(request) {
     return NextResponse.json({
       user: {
         id: user._id,
-        name: user.name,
+        username: user.username,
         email: user.email,
         settings: user.settings
       }

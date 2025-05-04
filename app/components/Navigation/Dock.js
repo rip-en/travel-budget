@@ -42,14 +42,16 @@ function DockItem({
     [-distance, 0, distance],
     [baseItemSize, magnification, baseItemSize]
   );
+
   const size = useSpring(targetSize, spring);
 
   return (
     <motion.div
       ref={ref}
       style={{
-        width: size,
-        height: size,
+        width: baseItemSize,
+        height: baseItemSize,
+        scale: useTransform(size, [baseItemSize, magnification], [1, magnification / baseItemSize]),
       }}
       onHoverStart={() => isHovered.set(1)}
       onHoverEnd={() => isHovered.set(0)}
@@ -109,38 +111,27 @@ function DockIcon({ children, className = "" }) {
 export default function Dock({
   items,
   className = "",
-  spring = { mass: 0.1, stiffness: 150, damping: 12 },
-  magnification = 70,
-  distance = 200,
+  spring = { mass: 0.1, stiffness: 120, damping: 15 },
+  magnification = 60,
+  distance = 150,
   panelHeight = 64,
-  dockHeight = 256,
   baseItemSize = 50,
 }) {
   const mouseX = useMotionValue(Infinity);
-  const isHovered = useMotionValue(0);
-
-  const maxHeight = useMemo(
-    () => Math.max(dockHeight, magnification + magnification / 2 + 4),
-    [magnification, dockHeight]
-  );
-  const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
-  const height = useSpring(heightRow, spring);
 
   return (
     <motion.div
-      style={{ height, scrollbarWidth: "none" }}
-      className="mx-2 flex max-w-full items-center"
+      style={{ height: panelHeight, scrollbarWidth: "none" }}
+      className="flex max-w-full items-center"
     >
       <motion.div
         onMouseMove={({ pageX }) => {
-          isHovered.set(1);
           mouseX.set(pageX);
         }}
         onMouseLeave={() => {
-          isHovered.set(0);
           mouseX.set(Infinity);
         }}
-        className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 flex items-end w-fit gap-4 rounded-2xl pb-2 px-4 backdrop-blur-sm bg-transparent`}
+        className={`flex w-fit items-end gap-4 rounded-2xl pb-2 px-4 ${className}`}
         style={{ height: panelHeight }}
         role="toolbar"
         aria-label="Application dock"

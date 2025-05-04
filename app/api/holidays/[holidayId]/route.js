@@ -20,10 +20,10 @@ async function getAuthenticatedUserId(request) {
   }
 }
 
-// GET /api/holidays/[id]
-export async function GET(request, { params }) {
-  // Extract and store id at the beginning
-  const id = params.id;
+// GET /api/holidays/[holidayId]
+export async function GET(request, { params: paramsPromise }) {
+  const params = await paramsPromise; // Await params
+  const holidayId = params.holidayId;
   
   try {
     const auth = await getAuthenticatedUserId(request);
@@ -32,9 +32,9 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    console.log(`Fetching holiday ${id} for user: ${auth.userId}`);
+    console.log(`Fetching holiday ${holidayId} for user: ${auth.userId}`);
     
-    const holiday = await holidayService.getHolidayById(id, auth.userId);
+    const holiday = await holidayService.getHolidayById(holidayId, auth.userId);
     
     if (!holiday) {
       return NextResponse.json(
@@ -48,7 +48,7 @@ export async function GET(request, { params }) {
       holiday
     });
   } catch (error) {
-    console.error(`Error fetching holiday ${id}:`, error);
+    console.error(`Error fetching holiday ${holidayId}:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch holiday', details: error.message },
       { status: 500 }
@@ -56,10 +56,10 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT /api/holidays/[id]
-export async function PUT(request, { params }) {
-  // Extract and store id at the beginning to avoid synchronous access warnings
-  const id = params.id;
+// PUT /api/holidays/[holidayId]
+export async function PUT(request, { params: paramsPromise }) {
+  const params = await paramsPromise; // Await params
+  const holidayId = params.holidayId;
   
   try {
     const auth = await getAuthenticatedUserId(request);
@@ -76,27 +76,30 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
     }
     
-    console.log(`Updating holiday ${id} for user: ${auth.userId}`);
+    console.log(`Updating holiday ${holidayId} for user: ${auth.userId}`);
     
-    const holiday = await holidayService.updateHoliday(id, holidayData, auth.userId);
+    // Assuming holidayService.updateHoliday handles authorization internally or accepts userId
+    const updatedHoliday = await holidayService.updateHoliday(holidayId, holidayData, auth.userId);
     
     return NextResponse.json({
       message: 'Holiday updated successfully',
-      holiday
+      holiday: updatedHoliday // Return the updated holiday object
     });
   } catch (error) {
-    console.error(`Error updating holiday ${id}:`, error);
+    console.error(`Error updating holiday ${holidayId}:`, error);
+    // Check for specific errors like "Holiday not found for this user"
+    const status = error.message.includes('not found') ? 404 : 500;
     return NextResponse.json(
       { error: 'Failed to update holiday', details: error.message },
-      { status: 500 }
+      { status: status }
     );
   }
 }
 
-// DELETE /api/holidays/[id]
-export async function DELETE(request, { params }) {
-  // Extract and store id at the beginning
-  const id = params.id;
+// DELETE /api/holidays/[holidayId]
+export async function DELETE(request, { params: paramsPromise }) {
+  const params = await paramsPromise; // Await params
+  const holidayId = params.holidayId;
   
   try {
     const auth = await getAuthenticatedUserId(request);
@@ -105,11 +108,12 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     
-    console.log(`Deleting holiday ${id} for user: ${auth.userId}`);
+    console.log(`Deleting holiday ${holidayId} for user: ${auth.userId}`);
     
-    const result = await holidayService.deleteHoliday(id, auth.userId);
+    // Assuming holidayService.deleteHoliday handles authorization internally or accepts userId
+    const result = await holidayService.deleteHoliday(holidayId, auth.userId);
     
-    if (result.deletedCount === 0) {
+    if (!result || result.deletedCount === 0) { // Check if deletion was successful
       return NextResponse.json(
         { error: 'Holiday not found or you do not have permission to delete it' },
         { status: 404 }
@@ -118,10 +122,12 @@ export async function DELETE(request, { params }) {
     
     return NextResponse.json({ message: 'Holiday deleted successfully' });
   } catch (error) {
-    console.error(`Error deleting holiday ${id}:`, error);
+    console.error(`Error deleting holiday ${holidayId}:`, error);
+    // Check for specific errors like "Holiday not found for this user"
+    const status = error.message.includes('not found') ? 404 : 500;
     return NextResponse.json(
       { error: 'Failed to delete holiday', details: error.message },
-      { status: 500 }
+      { status: status }
     );
   }
 } 

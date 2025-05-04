@@ -5,10 +5,10 @@ import { PlusCircle, Plane } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { AppLayout } from '../../components';
 
-// Import the main content that was previously in app/page.js
+// Import the main content component
 import MainContent from '../../components/Holiday/MainContent';
 
-export default function HolidaysPage() {
+export default function Holidays() {
   const { isDarkMode } = useTheme();
   
   return (
@@ -20,7 +20,7 @@ export default function HolidaysPage() {
           </h1>
         </div>
         
-        {/* Main content from the previous page.js */}
+        {/* Main content */}
         <MainContent />
       </div>
     </AppLayout>
